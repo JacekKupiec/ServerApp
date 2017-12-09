@@ -1,0 +1,7 @@
+prod:
+  id: 1
+  name: Kalafior Grzegorz
+  store_name: Real
+  price: 5.20
+  amount: 3
+  user_id: 1

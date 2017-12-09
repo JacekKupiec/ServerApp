@@ -1,0 +1,8 @@
+usr:
+  id: 1
+  name: 'jacek'
+  password_hash: 'abc'
+  token: '123'
+  token_expiration_date: <%= Time.now + 3.hours %>
+  refresh_token: '456'
+  refresh_token_expiration_date: <%= Time.now + 3.hours %>
