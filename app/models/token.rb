@@ -1,5 +1,6 @@
-class Token < ActiveRecord
+class Token < ApplicationRecord
   belongs_to :user
+  has_many :subsum
 
   validates :token, presence: true, uniqueness: true
   validates :token_expiration_date, presence: true
