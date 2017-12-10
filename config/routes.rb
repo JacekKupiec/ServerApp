@@ -13,4 +13,5 @@ Rails.application.routes.draw do
   patch 'products/increase_amount/:id/:delta', to: 'products#increase_amount'
   put 'products/increase_amount/:id/:delta', to: 'products#increase_amount'
   get 'products/:id', to: 'products#show'
+  put 'products/sync_subsum/:id/:subsum', to: 'products#sync_subsum'
 end
