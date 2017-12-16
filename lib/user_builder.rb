@@ -1,4 +1,5 @@
 require 'token_generator'
+require 'token_builder'
 
 class UserBuilder
   def self.build_user(params)

@@ -1,5 +1,7 @@
 require 'digest'
 require 'token_generator'
+require 'token_builder'
+require 'user_builder'
 
 class UsersController < ApplicationController
   skip_before_action :custom_authenticate, only: [:create, :refresh, :log_in]
@@ -18,11 +20,11 @@ class UsersController < ApplicationController
 
   def refresh
     refresh_token = get_http_token
-    @old_token = Token.find_by!(refresh_token: refresh_token)
+    old_token = Token.find_by!(refresh_token: refresh_token)
 
-    if @token.refresh_token_expiration_date > Time.now
+    if old_token.refresh_token_expiration_date > Time.now
       @token = get_token(old_token)
-      @token.refresh_token_expiration_date = old_token.refresh_token_expiration_date + TokenGenerator::REFERSH_TOKEN_EXPIRATION_TIME
+      @token.refresh_token_expiration_date = TokenGenerator.get_next_refresh_token_expiration_date
 
       @token.save
 
@@ -39,11 +41,10 @@ class UsersController < ApplicationController
     old_ref_tok = get_http_token #Jeżeli podsyłam stary fefresh token to może nie muszę tworzyć nowego w bazie???
 
     if is_password_correct?(password, @user)
-      @token = get_refresh_token(@user, old_ref_tok)
-
+      @token, should_reload = get_refresh_token(@user, old_ref_tok)
       @token.save
 
-      render json: format_log_in(@token), status: :ok
+      render json: format_log_in(@token, should_reload), status: :ok
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Log In"'
       render json: { message: 'Bad login or password' }, status: :unauthorized
@@ -63,7 +64,7 @@ class UsersController < ApplicationController
 
   def products_to_hash(products)
     products.map do |e|
-      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.amount }
+      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum }
     end
   end
 
@@ -71,14 +72,16 @@ class UsersController < ApplicationController
     tok = usr.tokens.find_by(refresh_token: old_ref_tok)
 
     if tok.present? && tok.refresh_token_expiration_date > Time.now
-      return tok
+      return tok, false
     elsif !tok.present?
-      return TokenBuilder.build_token
+      tok = TokenBuilder.build_token
+      tok.user = usr
+      return tok, true
     else
       tok.refresh_token = TokenGenerator.get_next_refresh_token
       tok.refresh_token_expiration_date = TokenGenerator.get_next_refresh_token_expiration_date
 
-      return tok
+      return tok, false
     end
   end
 
@@ -101,7 +104,8 @@ class UsersController < ApplicationController
     return { token: token.token,
              token_expiration_date: token.token_expiration_date.strftime(DATE_FORMAT),
              refresh_token: token.refresh_token,
-             refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT) }
+             refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT),
+             should_reload: true }
   end
 
   def format_refresh(token)
@@ -109,8 +113,9 @@ class UsersController < ApplicationController
              token_expiration_date: token.token_expiration_date.strftime(DATE_FORMAT) }
   end
 
-  def format_log_in(token)
+  def format_log_in(token, should_reload)
     return { refresh_token: token.refresh_token,
-             refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT) }
+             refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT),
+             should_reload: should_reload }
   end
 end

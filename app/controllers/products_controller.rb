@@ -1,3 +1,5 @@
+require 'product_builder'
+
 class ProductsController < ApplicationController
   rescue_from ArgumentError, with: :bad_parameters
 
@@ -7,10 +9,10 @@ class ProductsController < ApplicationController
     @token = get_token
     @user = get_user
     @product = ProductBuilder.build_product_for_user(@user, @token, params)
-    found_product = Product.find_by(guid: @product.guid).present?
+    found_product = Product.find_by(guid: @product.guid)
 
     if found_product.present?
-      render render json: { id: found_product.id }, staus: :ok
+      render json: { id: found_product.id }, staus: :ok
     elsif @product.save
       render json: { id: @product.id }, staus: :ok
     else
@@ -42,7 +44,8 @@ class ProductsController < ApplicationController
       render json: { amount: @product.total_sum }, status: :ok
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
-      render json: { message: 'No permission to decrease amount of that product'}, status: :unauthorized
+      render json: { message: 'No permission to decrease amount of that product'},
+             status: :unauthorized
     end
   end
 
@@ -52,13 +55,14 @@ class ProductsController < ApplicationController
     delta = Integer(params[:delta])
 
     if get_user.products.ids.include?(@product.id)
-      @subsum.amount += delta if delta >= 0
+      @subsum.subtotal += delta if delta >= 0
       @subsum.save
 
       render json: { amount: @product.total_sum }, status: :ok
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
-      render json: { message: 'No permission to increase amount of that product'}, status: :unauthorized
+      render json: { message: 'No permission to increase amount of that product'},
+             status: :unauthorized
     end
   end
 
@@ -66,10 +70,11 @@ class ProductsController < ApplicationController
     @product = get_product
 
     if get_user.products.ids.include?(@product.id)
-      render json: format_products(@product)
+      render json: format_products(@product), status: :ok
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
-      render json: { message: 'No permission to get this product' }, status: :unauthorized
+      render json: { message: 'No permission to get this product' },
+             status: :unauthorized
     end
   end
 
@@ -93,7 +98,7 @@ class ProductsController < ApplicationController
     token = get_token
 
     return product.subsums.find_by(token: token) ||
-        product.subsums.build(token: token, subsum: subsum)
+        product.subsums.build(token: token, subtotal: subsum)
   end
 
   def get_token
@@ -109,7 +114,7 @@ class ProductsController < ApplicationController
   end
 
   def format_products(product)
-    hash = product.attributes.extract!(:id, :name, :store_name, :price)
+    hash = product.attributes.extract!('id', 'name', 'store_name', 'price')
     hash[:amount] = product.total_sum
 
     return hash
