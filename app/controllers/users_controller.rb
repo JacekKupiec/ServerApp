@@ -14,7 +14,7 @@ class UsersController < ApplicationController
     if @user.save
       render json: format_create_response(@user.tokens.first) , status: :created
     else
-      render json: @user.errors.messages.extract!('name'), status: :bad_request
+      render json: @user.errors.messages, status: :bad_request
     end
   end
 
@@ -26,9 +26,12 @@ class UsersController < ApplicationController
       @token = get_token(old_token)
       @token.refresh_token_expiration_date = TokenGenerator.get_next_refresh_token_expiration_date
 
-      @token.save
-
-      render json: format_refresh(@token), status: :ok
+      if @token.save
+        render json: format_refresh(@token), status: :ok
+      else
+        logger.fatal "Nie mogę zapisać tokena"
+        render status: :internal_server_error
+      end
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Log In"'
       render json: { message: 'Bad refresh token' }, status: :unauthorized
@@ -42,9 +45,13 @@ class UsersController < ApplicationController
 
     if is_password_correct?(password, @user)
       @token, should_reload = get_refresh_token(@user, old_ref_tok)
-      @token.save
 
-      render json: format_log_in(@token, should_reload), status: :ok
+      if @token.save
+        render json: format_log_in(@token, should_reload), status: :ok
+      else
+        logger.fatal 'Nie mogę zapisać tokena, błąd logowania'
+        render status: :internal_server_error
+      end
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Log In"'
       render json: { message: 'Bad login or password' }, status: :unauthorized
@@ -64,7 +71,7 @@ class UsersController < ApplicationController
 
   def products_to_hash(products)
     products.map do |e|
-      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum }
+      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum, guid: e.guid }
     end
   end
 
@@ -105,7 +112,7 @@ class UsersController < ApplicationController
              token_expiration_date: token.token_expiration_date.strftime(DATE_FORMAT),
              refresh_token: token.refresh_token,
              refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT),
-             should_reload: true }
+             'should reload': true }
   end
 
   def format_refresh(token)
@@ -116,6 +123,6 @@ class UsersController < ApplicationController
   def format_log_in(token, should_reload)
     return { refresh_token: token.refresh_token,
              refresh_token_expiration_date: token.refresh_token_expiration_date.strftime(DATE_FORMAT),
-             should_reload: should_reload }
+             'should reload': should_reload }
   end
 end

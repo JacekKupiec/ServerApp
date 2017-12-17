@@ -16,7 +16,7 @@ class ProductsController < ApplicationController
     elsif @product.save
       render json: { id: @product.id }, staus: :ok
     else
-      render json: @user.errors.messages.except!('updated_at', 'created_at'), status: :bad_request
+      render json: @product.errors.messages, status: :bad_request
     end
   end
 
@@ -39,9 +39,12 @@ class ProductsController < ApplicationController
 
     if get_user.products.ids.include?(@product.id)
       @subsum.subtotal -= delta if delta >= 0
-      @subsum.save
 
-      render json: { amount: @product.total_sum }, status: :ok
+      if @subsum.save
+        render json: { amount: @product.total_sum }, status: :ok
+      else
+        render json: @subsum.errors.messages, status: :bad_request
+      end
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
       render json: { message: 'No permission to decrease amount of that product'},
@@ -56,9 +59,12 @@ class ProductsController < ApplicationController
 
     if get_user.products.ids.include?(@product.id)
       @subsum.subtotal += delta if delta >= 0
-      @subsum.save
 
-      render json: { amount: @product.total_sum }, status: :ok
+      if @subsum.save
+        render json: { amount: @product.total_sum }, status: :ok
+      else
+        render json: @subsum.errors.messages, status: :bad_request
+      end
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
       render json: { message: 'No permission to increase amount of that product'},
@@ -78,14 +84,17 @@ class ProductsController < ApplicationController
     end
   end
 
+  #Nieużywane, usunąć !!!
   def sync_subsum
     @product = get_product
     @subsum = get_subsum(@product)
-
     @subsum.subtotal = Integer(params[:subsum])
-    @subsum.save
 
-    render json: { amount: @product.total_sum }, status: :ok
+    if @subsum.save
+      render json: { amount: @product.total_sum }, status: :ok
+    else
+      render json: @subsum.errors.messages, status: :bad_request
+    end
   end
 
   private
@@ -114,7 +123,7 @@ class ProductsController < ApplicationController
   end
 
   def format_products(product)
-    hash = product.attributes.extract!('id', 'name', 'store_name', 'price')
+    hash = product.attributes.extract!('id', 'name', 'store_name', 'price', 'guid')
     hash[:amount] = product.total_sum
 
     return hash
