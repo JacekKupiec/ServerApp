@@ -123,7 +123,7 @@ class ProductsController < ApplicationController
   end
 
   def format_products(product)
-    hash = product.attributes.extract!('id', 'name', 'store_name', 'price', 'guid')
+    hash = product.attributes.extract!('id', 'name', 'store_name', 'price', 'guid', 'brand')
     hash[:amount] = product.total_sum
 
     return hash
