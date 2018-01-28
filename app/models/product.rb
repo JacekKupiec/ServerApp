@@ -1,5 +1,6 @@
 class Product < ApplicationRecord
   belongs_to :user
+  belongs_to :group, optional: true
   has_many :subsums, dependent: :destroy
 
   validates :name, presence: true

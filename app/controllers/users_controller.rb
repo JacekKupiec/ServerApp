@@ -63,6 +63,11 @@ class UsersController < ApplicationController
     render json: { products: products_to_hash(@user.products) }, status: :ok
   end
 
+  def get_groups
+    @user = Token.find_by!(token: get_http_token).user
+    render json: { groups: groups_to_hash(@user.groups) }
+  end
+
   private
 
   def is_password_correct?(new_pass, user)
@@ -73,6 +78,10 @@ class UsersController < ApplicationController
     products.map do |e|
       { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum, guid: e.guid, brand: e.brand }
     end
+  end
+
+  def groups_to_hash(groups)
+    groups.map { |e| { id: e.id, name: e.name } }
   end
 
   def get_refresh_token(usr, old_ref_tok)

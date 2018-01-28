@@ -67,8 +67,7 @@ class ProductsController < ApplicationController
       end
     else
       response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
-      render json: { message: 'No permission to increase amount of that product'},
-             status: :unauthorized
+      render json: { message: 'No permission to increase amount of that product'}, status: :unauthorized
     end
   end
 
