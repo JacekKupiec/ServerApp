@@ -76,7 +76,7 @@ class UsersController < ApplicationController
 
   def products_to_hash(products)
     products.map do |e|
-      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum, guid: e.guid, brand: e.brand }
+      { id: e.id, name: e.name, store_name: e.store_name, price: e.price, amount: e.total_sum, guid: e.guid, brand: e.brand, group_id: e.group_id }
     end
   end
 

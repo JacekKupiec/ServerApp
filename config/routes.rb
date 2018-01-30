@@ -21,4 +21,5 @@ Rails.application.routes.draw do
   put 'groups/add_product/:group_id/:product_id', to: 'groups#add_product'
   patch 'groups/add_product/:group_id/:product_id', to: 'groups#add_product'
   delete 'groups/remove_product/:group_id/:product_id', to: 'groups#remove_product'
+  get 'groups/:id', to: 'groups#get_group'
 end

@@ -65,6 +65,18 @@ class GroupsController < ApplicationController
     end
   end
 
+  def get_group
+    @user = get_user
+    @group = Group.find params[:id]
+
+    if @group.user == @user
+      render json: { id: @group.id, name: @group.name }
+    else
+      response.headers['WWW-Authenticate'] = 'Token realm="Change account"'
+      render json: { message: 'No permission to get the group'}, status: :unauthorized
+    end
+  end
+
   private
 
   #Te 2 metody powinny trafić do osobnego modułu poniewaz sie powtarzają w 2 miejscach
